@@ -149,21 +149,24 @@ void ListeAthlete(FILE *file){
     }
 }
 
-void afficherAthlete(){
+void afficherAthlete() {
     Performance performance;
-    int choix;
+    int choix, filtre;
+    char epreuveFiltre[100];
+    Date dateFiltre;
+    int filtrerParEpreuve = 0, filtrerParDate = 0;
 
     FILE *file = fopen("/workspaces/PROJET-JO-/Athlete.txt", "r");
-    if(file == NULL){
+    if (file == NULL) {
         printf("Erreur ouverture fichier\n");
         return;
     }
 
     ListeAthlete(file);
-    
+
     printf("Choix : ");
     if (scanf("%d", &choix) != 1) {
-        while (getchar() != '\n');  
+        while (getchar() != '\n');
         printf("Entrée invalide. Veuillez entrer un nombre.\n");
         fclose(file);
         return;
@@ -171,24 +174,67 @@ void afficherAthlete(){
 
     printf("\n");
     FILE *Athlete = ouvrirAthlete(choix);
-    if(Athlete == NULL){
+    if (Athlete == NULL) {
         printf("Erreur ouverture fichier\n");
+        fclose(file);
+        return;
     }
 
-    //Sauter une ligne dans le fichier de l'athlete
-    while(fgetc(Athlete) != '\n');
+    printf("Voulez-vous filtrer par épreuve et/ou par date ?\n");
+    printf("1. Aucun filtre\n");
+    printf("2. Filtrer par épreuve\n");
+    printf("3. Filtrer par date\n");
+    printf("4. Filtrer par épreuve et date\n");
+    printf("Choix : ");
+    if (scanf("%d", &filtre) != 1) {
+        while (getchar() != '\n');
+        printf("Entrée invalide. Veuillez entrer un nombre.\n");
+        fclose(Athlete);
+        fclose(file);
+        return;
+    }
 
-    while(fscanf(Athlete, "%d %d %d %s %d %d %d %d", &performance.date.jour, &performance.date.mois, &performance.date.annee, performance.epreuve, &performance.temps.minute, &performance.temps.seconde, &performance.temps.ms, &performance.position_relais) != EOF){
-        printf("Le %d/%d/%d\n", performance.date.jour, performance.date.mois, performance.date.annee);
-        printf("Temps : %dmin %dsec %dms\n", performance.temps.minute, performance.temps.seconde, performance.temps.ms);
-        if(strcmp(performance.epreuve, "relais") == 0){
-            printf("Position relais : %d\n", performance.position_relais);
+    if (filtre == 2 || filtre == 4) {
+        printf("Entrez l'épreuve : ");
+        scanf("%s", epreuveFiltre);
+        filtrerParEpreuve = 1;
+    }
+    if (filtre == 3 || filtre == 4) {
+        printf("Entrez la date (jj mm aaaa) : ");
+        if (scanf("%d %d %d", &dateFiltre.jour, &dateFiltre.mois, &dateFiltre.annee) != 3) {
+            while (getchar() != '\n');
+            printf("Entrée invalide. Veuillez entrer des nombres.\n");
+            fclose(Athlete);
+            fclose(file);
+            return;
         }
-        printf("\n");
+        filtrerParDate = 1;
+    }
+
+    while (fgetc(Athlete) != '\n');  // Sauter la première ligne
+
+    while (fscanf(Athlete, "%d %d %d %s %d %d %d %d", &performance.date.jour, &performance.date.mois, &performance.date.annee, performance.epreuve, &performance.temps.minute, &performance.temps.seconde, &performance.temps.ms, &performance.position_relais) != EOF) {
+        int afficher = 1;
+        if (filtrerParEpreuve && strcmp(performance.epreuve, epreuveFiltre) != 0) {
+            afficher = 0;
+        }
+        if (filtrerParDate && (performance.date.jour != dateFiltre.jour || performance.date.mois != dateFiltre.mois || performance.date.annee != dateFiltre.annee)) {
+            afficher = 0;
+        }
+        if (afficher) {
+            printf("Le %d/%d/%d\n", performance.date.jour, performance.date.mois, performance.date.annee);
+            printf("Temps : %dmin %dsec %dms\n", performance.temps.minute, performance.temps.seconde, performance.temps.ms);
+            if (strcmp(performance.epreuve, "relais") == 0) {
+                printf("Position relais : %d\n", performance.position_relais);
+            }
+            printf("\n");
+        }
     }
 
     fclose(Athlete);
+    fclose(file);
 }
+
 
 void creeAthlete(){
     char prenom[50], chemin[100], ligne[100];
